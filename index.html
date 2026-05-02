@@ -110,10 +110,11 @@
 
         .memory-card {
             background-color: #3498db; color: white; border: 3px solid transparent; border-radius: 10px;
-            padding: 10px 8px; cursor: pointer; transition: background-color 0.2s ease, box-shadow 0.2s ease;
-            text-align: center; min-height: 58px; width: 100%;
+            padding: 12px 10px; cursor: pointer; transition: background-color 0.2s ease, box-shadow 0.2s ease;
+            text-align: center; min-height: 62px; width: 100%;
             display: flex; align-items: center; justify-content: center;
-            font-size: clamp(.72rem, 2.4vw, .92rem); font-weight: bold; user-select: none; word-break: break-word;
+            font-size: clamp(1rem, 2.6vw, 1.25rem); font-weight: bold; user-select: none; word-break: break-word;
+            overflow: hidden;
         }
         .memory-card:hover:not(.selected):not(.matched):not(.flash-error) { transform: scale(1.02); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
         .memory-card.selected { background-color: #f1c40f; color: white; animation: pulse 1s ease-in-out infinite; }
@@ -195,7 +196,7 @@
             .subtitle { font-size: .9rem; }
             .game-info { margin-bottom: .6rem; }
             .match-container { gap: 6px; }
-            .memory-card { min-height: 52px; padding: 8px 6px; font-size: .7rem; border-radius: 8px; }
+            .memory-card { min-height: 54px; padding: 8px 7px; font-size: .92rem; border-radius: 8px; }
             .order-item { padding: 10px 10px; min-height: 56px; gap: 8px; }
             .order-word { font-size: 1.1rem; }
             .arrow-btn { width: 34px; height: 34px; font-size: .8rem; }
@@ -212,7 +213,7 @@
         @media (max-width: 380px) {
             .game-container { padding: .6rem; }
             h1 { font-size: 1.2rem; }
-            .memory-card { min-height: 46px; padding: 6px 5px; font-size: .65rem; }
+            .memory-card { min-height: 48px; padding: 7px 5px; font-size: .85rem; }
             .order-item { padding: 8px 8px; min-height: 50px; }
             .order-word { font-size: 1rem; }
             .arrow-btn { width: 30px; height: 30px; font-size: .7rem; border-radius: 6px; }
