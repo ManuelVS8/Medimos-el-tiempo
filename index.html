@@ -137,17 +137,15 @@
             min-height: 62px;
         }
         .order-item:hover { background:#eef6ff; border-color:#90c4f8; transform:translateY(-1px); box-shadow:0 3px 8px rgba(0,0,0,.08); }
-        .order-item.correct-item { background:#27ae60; border-color:#1e8449; }
-        .order-item.correct-item .order-word { color:#fff; }
-        .order-item.wrong-item { background:#e74c3c; border-color:#c0392b; animation:shakeRedOrder 0.4s ease-in-out; }
-        .order-item.wrong-item .order-word { color:#fff; }
-        @keyframes shakeRedOrder {
+        .order-word { flex:1; font-size:clamp(1.15rem,3.5vw,1.5rem); font-weight:800; color:#333; text-align:center; transition: color .2s; }
+        .order-word.word-correct { color: #27ae60; }
+        .order-word.word-wrong { color: #e74c3c; animation: shakeRedWord 0.4s ease-in-out; }
+        @keyframes shakeRedWord {
             0% { transform: translateX(0); } 15% { transform: translateX(-6px); }
             30% { transform: translateX(6px); } 45% { transform: translateX(-5px); }
             60% { transform: translateX(5px); } 75% { transform: translateX(-3px); }
             90% { transform: translateX(3px); } 100% { transform: translateX(0); }
         }
-        .order-word { flex:1; font-size:clamp(1.15rem,3.5vw,1.5rem); font-weight:800; color:#333; text-align:center; }
         .arrows-stack { display:flex; flex-direction:column; gap:4px; flex-shrink:0; }
         .arrow-btn {
             width:38px; height:38px; border:none; border-radius:8px; background:var(--orange); color:#fff;
@@ -272,7 +270,7 @@
         </header>
         <div class="theory-content">
             <div class="theory-main-title notranslate" data-i18n="summaryMainTitle">Measuring historical time</div>
-            <p class="theory-intro notranslate" data-i18n="summaryIntro">To indicate when a past event occurred, we can distinguish between units of measurement for recent past and ancient past:</p>
+            <p class="theory-intro notranslate" data-i18n="summaryIntro">We use different measuring units for the recent past and the ancient past:</p>
             <div class="change-block blue-block">
                 <div class="block-title notranslate" data-i18n="blockRecentTitle">Measuring recent time</div>
                 <ul class="block-list">
@@ -393,7 +391,7 @@
     let finalScoreVal = 0;
     let totalAttempts = 0;
 
-    /* Live game data arrays — these store the CURRENT translation of each pair */
+    /* Live game data arrays */
     let game1LivePairs = [];
     let game2LivePairs = [];
 
@@ -407,7 +405,7 @@
             btnStart: "Start",
             summaryTitle: "Measuring Historical Time",
             summaryMainTitle: "Measuring historical time",
-            summaryIntro: "To indicate when a past event occurred, we can distinguish between units of measurement for recent past and ancient past:",
+            summaryIntro: "We use different measuring units for the recent past and the ancient past:",
             blockRecentTitle: "Measuring recent time",
             termMinute: "Minute:", defMinute: "60 seconds",
             termHour: "Hour:", defHour: "60 minutes",
@@ -435,8 +433,8 @@
             modalTimeLabel: "Your time: ",
             btnSave: "Save",
             btnCancel: "Cancel",
-            msgPerfect: "Congratulations, maximum score!",
-            msgGood: "Good work! Keep practising",
+            msgPerfect: "Congratulations, perfect score!",
+            msgGood: "Good job! Keep practising",
             placeholderName: "Name",
             placeholderSurname: "Surname",
             g1_minute: "Minute", g1_d1: "60 seconds",
@@ -515,10 +513,7 @@
         return (translations[currentLang] && translations[currentLang][key]) || translations['en'][key] || key;
     }
 
-    /* 
-       KEY TRANSLATION MAPS: map each pairId to its i18n keys for term and definition.
-       This lets us re-translate cards on the fly without rebuilding them.
-    */
+    /* Key translation maps for live card translation */
     const game1KeyMap = {
         1: { termKey: 'g1_minute', defKey: 'g1_d1' },
         2: { termKey: 'g1_hour',   defKey: 'g1_d2' },
@@ -538,7 +533,6 @@
         currentLang = lang;
         document.documentElement.lang = lang;
 
-        /* Translate all data-i18n elements */
         document.querySelectorAll('[data-i18n]').forEach(el => {
             const key = el.getAttribute('data-i18n');
             const val = t(key);
@@ -558,7 +552,6 @@
         document.getElementById('playerName').placeholder = t('placeholderName');
         document.getElementById('playerSurname').placeholder = t('placeholderSurname');
 
-        /* Update flag button styles */
         const flagEN = document.getElementById('flagEN');
         const flagES = document.getElementById('flagES');
         if (lang === 'en') {
@@ -569,23 +562,14 @@
             flagEN.classList.add('inactive'); flagEN.classList.remove('active');
         }
 
-        /* Live-translate match cards in game 1 */
         translateLiveCards('game1Container', game1KeyMap, game1LivePairs);
-
-        /* Live-translate match cards in game 2 */
         translateLiveCards('game2Container', game2KeyMap, game2LivePairs);
 
-        /* Live-translate order cards in game 3 */
         if (order3CurrentLevel !== null) {
             renderOrderLevel(order3Levels[order3CurrentLevel]);
         }
     }
 
-    /*
-       translateLiveCards: reads each card's pairId and type, looks up the
-       i18n key from the map, translates it, updates both the DOM textContent
-       AND the livePairs array so the game logic stays in sync.
-    */
     function translateLiveCards(containerId, keyMap, livePairs) {
         if (!livePairs.length) return;
         const container = document.getElementById(containerId);
@@ -593,13 +577,12 @@
         const cards = container.querySelectorAll('.memory-card');
         cards.forEach(card => {
             const pairId = parseInt(card.dataset.pairId);
-            const type = card.dataset.type; // 'term' or 'def'
+            const type = card.dataset.type;
             const mapping = keyMap[pairId];
             if (!mapping) return;
             const i18nKey = type === 'term' ? mapping.termKey : mapping.defKey;
             const translatedText = t(i18nKey);
             card.textContent = translatedText;
-            /* Also update the livePairs array so internal state is consistent */
             const pairObj = livePairs.find(p => p.id === pairId);
             if (pairObj) {
                 if (type === 'term') pairObj.term = translatedText;
@@ -714,7 +697,6 @@
         const container = document.getElementById(containerId);
         container.innerHTML = '';
 
-        /* Store pairs for live translation */
         livePairsRef.length = 0;
         data.forEach(d => livePairsRef.push({ id: d.id, term: d.term, def: d.def }));
 
@@ -893,14 +875,15 @@
         let allCorrect = true;
 
         items.forEach((item, index) => {
-            item.classList.remove('correct-item', 'wrong-item');
+            const wordEl = item.querySelector('.order-word');
+            wordEl.classList.remove('word-correct', 'word-wrong');
             const unit = order3CurrentItems[index];
             let isCorrect = true;
             if (index < order3CurrentItems.length - 1) {
                 if (unit.order >= order3CurrentItems[index + 1].order) isCorrect = false;
             }
-            if (isCorrect) { item.classList.add('correct-item'); }
-            else { item.classList.add('wrong-item'); allCorrect = false; }
+            if (isCorrect) { wordEl.classList.add('word-correct'); }
+            else { wordEl.classList.add('word-wrong'); allCorrect = false; }
         });
 
         if (allCorrect) {
@@ -911,7 +894,9 @@
             else { setTimeout(() => { renderOrderLevel(order3Levels[order3CurrentLevel]); }, 600); }
         } else {
             playSound('error');
-            setTimeout(() => { items.forEach(item => { item.classList.remove('correct-item', 'wrong-item'); }); }, 1200);
+            setTimeout(() => {
+                document.querySelectorAll('.order-word').forEach(w => { w.classList.remove('word-correct', 'word-wrong'); });
+            }, 1200);
         }
     };
 
