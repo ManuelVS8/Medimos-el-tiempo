@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="en" translate="no" class="notranslate"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="google" content="notranslate">
+    <title>Measuring Historical Time</title>
+    <link rel="icon" type="image/x-icon" href="https://raw.githubusercontent.com/ManuelVS8/Audios-juegos-SCIENCE/refs/heads/main/icono.ico">
+    <style>
+        /* ====== Reset & base ====== */
+        * { box-sizing: border-box; margin:0; padding:0; }
+        :root{
+            --blue:#001DFF;
+            --blue-dark:#04032B;
+            --blue-700:#1a3a5f;
+            --blue-600:#254fba;
+            --orange:#f59e42;
+            --orange-700:#e67e22;
+            --bg-grad-1:#1a3a5f;
+            --bg-grad-2:#0d2340;
+            --white:#ffffff;
+            --green:#2ecc71;
+            --red:#e74c3c;
+            --panel:#E8EAFF;
+        }
+        body{
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--bg-grad-1) 0%, var(--bg-grad-2) 100%);
+            min-height:100vh; 
+            display:flex; 
+            justify-content:center; 
+            align-items: flex-start; 
+            padding-top: 20px;
+            padding-bottom: 20px;
+            color:#333; 
+        }
+        .game-container{
+            background:var(--white); border-radius:16px; box-shadow:0 12px 24px rgba(0,0,0,.12);
+            padding:1.2rem; max-width:980px; width:100%; min-height:640px; position:relative; overflow:hidden;
+            display:flex; flex-direction:column;
+            margin-bottom: 2rem; 
+        }
+        header{ text-align:center; margin-bottom:.8rem; margin-top:1.5rem; }
+        h1{ color:var(--blue-dark); font-size:clamp(1.6rem,5vw,2.8rem); font-weight:900; letter-spacing:.5px; }
+        .subtitle{ color:var(--blue-700); font-size:clamp(.95rem,3.2vw,1.2rem); margin-top:.25rem; }
+        .highlight-keyword{ color:var(--orange); font-weight:800; }
+
+        .btn{ color:#fff; border:none; padding:.75rem 1.2rem; border-radius:10px; cursor:pointer; font-weight:800;
+            transition:transform .08s ease, box-shadow .2s ease, background-color .25s ease; min-width:140px; height:48px;
+            display:inline-flex; align-items:center; justify-content:center; font-size: 1rem; }
+        .btn:hover{ transform:translateY(-2px); box-shadow:0 6px 14px rgba(0,0,0,.12); }
+        .btn:active{ transform:translateY(0); }
+        .btn-primary{ background:var(--orange); }
+        .btn-primary:hover{ background:var(--orange-700); }
+        .btn-blue{ background:var(--blue-600); }
+        .btn-blue:hover{ filter:brightness(.9); }
+        .btn-ghost{ background:#e6f2ff; color:var(--blue-700); }
+
+        .screen{ display:none; animation:fadeIn .35s ease; flex-direction:column; flex:1; }
+        .screen.active{ display:flex; }
+        @keyframes fadeIn{ from{opacity:0; transform:translateY(12px);} to{opacity:1; transform:translateY(0);} }
+
+        .game-info{ display:flex; gap:.6rem; align-items:center; justify-content:space-between; margin:.4rem 0 .8rem; flex-wrap:wrap; }
+        .timer{ font-weight:900; color:var(--blue-700); font-size:clamp(.9rem,2.2vw,1.1rem); }
+        .progress-bar{ flex:1; height:10px; background:#e6f2ff; border-radius:999px; overflow:hidden; }
+        .progress-fill{ height:100%; width:0%; background:linear-gradient(90deg, var(--orange) 0%, var(--orange-700) 100%); transition:width .3s ease; }
+
+        /* Pantalla Inicio */
+        .start-content{ display:flex; flex-direction:column; justify-content:center; align-items:center; flex:1; gap:1rem; padding:1rem; }
+        .advice-box{ background:var(--panel); border-left:4px solid var(--blue-700); padding:1rem 1.2rem; border-radius:12px;
+            color:var(--blue-700); max-width:760px; text-align:center; font-size:clamp(.95rem,2.8vw,1.1rem); }
+        .start-image{ max-width: 300px; width: 100%; margin: 0 auto; margin-top: auto; }
+        
+        /* Top controls */
+        .top-controls{ position:absolute; top:.8rem; right:.8rem; display:flex; align-items:center; gap:8px; z-index:20; }
+
+        /* Language selector pill */
+        .lang-pill{
+            display:flex; align-items:center; background:#f0f2ff; border:2px solid var(--blue-600);
+            border-radius:10px; overflow:hidden; flex-shrink:0;
+        }
+        .lang-flag-btn{
+            font-size:1.35rem; cursor:pointer; padding:5px 9px; border:none; background:transparent;
+            transition:background-color .2s, opacity .2s, transform .1s; line-height:1; display:flex; align-items:center; justify-content:center;
+        }
+        .lang-flag-btn:hover:not(.active){ background:rgba(37,79,186,.08); }
+        .lang-flag-btn:active{ transform:scale(.92); }
+        .lang-flag-btn.active{ background:var(--blue-600); }
+        .lang-flag-btn.inactive{ opacity:.45; }
+
+        .mute-btn{ background:linear-gradient(135deg, var(--orange), var(--orange-700)); color:#fff; border:2px solid #fff; width:42px; height:42px; border-radius:50%; cursor:pointer; font-size:1rem; display:flex; align-items:center; justify-content:center; z-index:20; padding: 0; transition: transform 0.1s; flex-shrink:0; }
+        .mute-btn:hover{ transform: scale(1.1); }
+        .mute-btn svg { width: 20px; height: 20px; fill: white; }
+
+        /* --- Pantalla Resumen --- */
+        .theory-content { padding: 10px; margin: 10px 0; flex: 1; display: flex; flex-direction: column; gap: 15px; }
+        .theory-main-title { text-align: center; color: var(--blue-dark); font-size: 1.3rem; font-weight: 800; margin-bottom: 5px; }
+        .theory-intro { text-align: center; color: #555; margin-bottom: 10px; font-size: .95rem; }
+        .change-block { border-radius: 15px; padding: 14px 18px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); }
+        .change-block.blue-block { background: #e6f2ff; border: 2px solid var(--blue-600); }
+        .change-block.orange-block { background: #fff7ed; border: 2px solid var(--orange); }
+        .block-title { font-size: 1.15rem; font-weight: 800; margin-bottom: 10px; color: var(--blue-700); }
+        .orange-block .block-title { color: var(--orange-700); }
+        .block-list { list-style: none; padding-left: 5px; }
+        .block-list li { margin-bottom: 7px; font-size: .92rem; color: #444; line-height: 1.5; }
+        .block-list li strong { color: var(--orange); font-weight: 700; }
+
+        /* Juego: Emparejar Tarjetas */
+        .match-container { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0; flex: 1; align-content: flex-start; }
+        .column { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+
+        .memory-card {
+            background-color: #3498db; color: white; border: 3px solid transparent; border-radius: 10px;
+            padding: 10px 8px; cursor: pointer; transition: background-color 0.2s ease, box-shadow 0.2s ease;
+            text-align: center; min-height: 58px; width: 100%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: clamp(.72rem, 2.4vw, .92rem); font-weight: bold; user-select: none; word-break: break-word;
+        }
+        .memory-card:hover:not(.selected):not(.matched):not(.flash-error) { transform: scale(1.02); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+        .memory-card.selected { background-color: #f1c40f; color: white; animation: pulse 1s ease-in-out infinite; }
+        @keyframes pulse { 0%, 100% { transform: scale(1.02); } 50% { transform: scale(1.05); } }
+        .memory-card.matched { background-color: #27ae60; color: white; cursor: default; animation: none; transform: none; }
+        .memory-card.flash-error { animation: shakeRed 0.4s ease-in-out; }
+        @keyframes shakeRed {
+            0% { background-color: #3498db; transform: translateX(0); }
+            15% { background-color: #e74c3c; transform: translateX(-6px); }
+            30% { transform: translateX(6px); } 45% { transform: translateX(-5px); }
+            60% { transform: translateX(5px); } 75% { transform: translateX(-3px); }
+            90% { transform: translateX(3px); } 100% { background-color: #3498db; transform: translateX(0); }
+        }
+
+        /* Game 3: Ordering */
+        .order-container { display:flex; flex-direction:column; gap:8px; flex:1; align-items:center; justify-content:center; }
+        .order-item {
+            display:flex; align-items:center; gap:10px; width:100%; max-width:520px;
+            background:#f8fff9; border:2px solid #b7e4c7; border-radius:12px; padding:12px 14px;
+            transition: background-color .2s, border-color .2s, transform .15s, box-shadow .2s;
+            min-height: 62px;
+        }
+        .order-item:hover { background:#eef6ff; border-color:#90c4f8; transform:translateY(-1px); box-shadow:0 3px 8px rgba(0,0,0,.08); }
+        .order-item.correct-item { background:#27ae60; border-color:#1e8449; }
+        .order-item.correct-item .order-word { color:#fff; }
+        .order-item.wrong-item { background:#e74c3c; border-color:#c0392b; animation:shakeRedOrder 0.4s ease-in-out; }
+        .order-item.wrong-item .order-word { color:#fff; }
+        @keyframes shakeRedOrder {
+            0% { transform: translateX(0); } 15% { transform: translateX(-6px); }
+            30% { transform: translateX(6px); } 45% { transform: translateX(-5px); }
+            60% { transform: translateX(5px); } 75% { transform: translateX(-3px); }
+            90% { transform: translateX(3px); } 100% { transform: translateX(0); }
+        }
+        .order-word { flex:1; font-size:clamp(1.15rem,3.5vw,1.5rem); font-weight:800; color:#333; text-align:center; }
+        .arrows-stack { display:flex; flex-direction:column; gap:4px; flex-shrink:0; }
+        .arrow-btn {
+            width:38px; height:38px; border:none; border-radius:8px; background:var(--orange); color:#fff;
+            cursor:pointer; font-size:.9rem; display:flex; align-items:center; justify-content:center;
+            transition:background-color .15s, transform .1s, opacity .2s; line-height:1;
+        }
+        .arrow-btn:hover:not(:disabled) { background:var(--orange-700); transform:scale(1.08); }
+        .arrow-btn:active:not(:disabled) { transform:scale(0.95); }
+        .arrow-btn:disabled { opacity:0.3; cursor:default; background:#bbb; }
+        .check-btn-container { text-align:center; margin-top:.6rem; padding-bottom:.5rem; }
+
+        /* Pantalla Final */
+        .results{ display:flex; flex-direction:column; align-items:center; gap:.6rem; text-align:center; flex:1; justify-content:center;}
+        .final-title{ color:var(--blue-dark); font-weight:900; }
+        .big-score{ font-size:clamp(2.2rem,6vw,3.4rem); color:var(--blue-600); font-weight:900; }
+        .score-title{ font-size:1.0rem; color:var(--blue-700); margin-top:1rem; }
+        .final-time{ color:var(--blue-700); }
+        #trophyBox { display: none; font-size: clamp(4rem, 10vw, 7rem); margin: .5rem 0; text-align: center; align-self: center; animation: bounce 1s ease infinite; color: var(--orange); line-height: 1; }
+        @keyframes bounce { 0%,100%{ transform: translateY(0) scale(1); } 50%{ transform: translateY(-15px) scale(1.1); } }
+        .credit{ color:var(--blue-700); margin-top:1rem; }
+        #finalMsg { font-size: clamp(1.1rem, 3.8vw, 1.7rem); font-weight: 800; color: var(--blue-700); margin-top: 0.6rem; }
+        .school-logo { display: block; width: 160px; max-width: 28%; height: auto; margin-top: 0.8rem; border-radius: 8px; object-fit: contain; }
+
+        /* --- ESTILOS DEL HALL OF FAME --- */
+        .hall-of-fame { background: var(--panel); border-radius: 12px; padding: 1rem; margin-top: 1.5rem; width: 100%; max-width: 600px; }
+        .hall-of-fame-title { color: var(--blue-700); font-weight: 800; font-size: 1.15rem; text-align: center; margin-bottom: 0.8rem; }
+        .hall-of-fame-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+        .hall-of-fame-table th { background: var(--blue-600); color: white; padding: 0.45rem 0.4rem; text-align: left; }
+        .hall-of-fame-table td { padding: 0.35rem 0.4rem; border-bottom: 1px solid #ddd; }
+        .hall-of-fame-table tr:last-child td { border-bottom: none; }
+        .hall-of-fame-table tr:nth-child(even) { background-color: rgba(255, 255,255, 0.5); }
+        .hall-of-fame-error, .hall-of-fame-loading { padding: 1rem; text-align: center; color: var(--blue-700); font-style: italic; }
+        .hall-of-fame-error { color: var(--red); }
+
+        .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:none; justify-content:center; align-items:center; z-index:1000; }
+        .modal-content { background:white; padding:2rem; border-radius:15px; width:90%; max-width:400px; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.3); }
+        .modal-input { width:100%; padding:10px; margin:10px 0; border:2px solid #ddd; border-radius:8px; font-size:1rem; }
+        
+        .confetti{ position:fixed; width:10px; height:10px; border-radius:50%; animation: confetti-fall 3s linear forwards; z-index:999; }
+        @keyframes confetti-fall{ 0%{ transform:translate(0, -20px) rotate(0); opacity:1;} 100%{ transform:translate(var(--tx), var(--ty)) rotate(360deg); opacity:0; } }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .game-container { padding: .8rem; min-height: 560px; }
+            header { margin-top: 3.2rem; margin-bottom: .5rem; }
+            h1 { font-size: 1.4rem; }
+            .subtitle { font-size: .9rem; }
+            .game-info { margin-bottom: .6rem; }
+            .match-container { gap: 6px; }
+            .memory-card { min-height: 52px; padding: 8px 6px; font-size: .7rem; border-radius: 8px; }
+            .order-item { padding: 10px 10px; min-height: 56px; gap: 8px; }
+            .order-word { font-size: 1.1rem; }
+            .arrow-btn { width: 34px; height: 34px; font-size: .8rem; }
+            .arrows-stack { gap: 3px; }
+            .btn { min-width: 120px; height: 44px; font-size: .9rem; padding: .65rem 1rem; }
+            .top-controls { top: .6rem; right: .6rem; gap: 6px; }
+            .mute-btn { width: 36px; height: 36px; }
+            .mute-btn svg { width: 17px; height: 17px; }
+            .lang-flag-btn { font-size: 1.15rem; padding: 4px 7px; }
+            .hall-of-fame { padding: .8rem; }
+            .hall-of-fame-table { font-size: .78rem; }
+            .hall-of-fame-table th, .hall-of-fame-table td { padding: .3rem .3rem; }
+        }
+        @media (max-width: 380px) {
+            .game-container { padding: .6rem; }
+            h1 { font-size: 1.2rem; }
+            .memory-card { min-height: 46px; padding: 6px 5px; font-size: .65rem; }
+            .order-item { padding: 8px 8px; min-height: 50px; }
+            .order-word { font-size: 1rem; }
+            .arrow-btn { width: 30px; height: 30px; font-size: .7rem; border-radius: 6px; }
+            .lang-flag-btn { font-size: 1rem; padding: 3px 6px; }
+        }
+        @media (min-width: 601px) and (max-width: 899px) {
+            .school-logo { width: 140px; max-width: 160px; }
+        }
+        @media (max-width: 420px) {
+            .school-logo { width: 110px; max-width: 40%; margin-top: 0.6rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="game-container">
+    <!-- Top Controls: Language Pill + Mute -->
+    <div class="top-controls">
+        <div class="lang-pill" id="langPill">
+            <button class="lang-flag-btn active" id="flagEN" data-lang="en" title="English">🇬🇧</button>
+            <button class="lang-flag-btn inactive" id="flagES" data-lang="es" title="Español">🇪🇸</button>
+        </div>
+        <button class="mute-btn" id="muteBtn" title="Silenciar/Activar sonido">
+            <svg id="iconSpeaker" viewBox="0 0 24 24">
+                <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"></path>
+            </svg>
+        </button>
+    </div>
+
+    <!-- Pantalla de Inicio -->
+    <section class="screen active" id="startScreen">
+        <header>
+            <h1 class="notranslate" data-i18n="startTitle">Measuring Historical Time</h1>
+            <div class="subtitle notranslate" data-i18n="startSubtitle">We use different measures of time to indicate the passage of time.</div>
+        </header>
+        <div class="start-content">
+            <div class="advice-box notranslate" data-i18n="startAdvice">
+                We can use different units of time to classify recent events: <span class="highlight-keyword">minute, hour, day, week, month</span>; and ancient events: <span class="highlight-keyword">year, lustrum, decade, century, millennium</span>.<strong style="display:block; margin-top:0.5rem; text-align: center;" data-i18n="startEncouragement">Come on!</strong>
+            </div>
+            <button class="btn btn-primary notranslate" id="startBtn" data-i18n="btnStart">Start</button>
+            <img class="start-image" src="https://raw.githubusercontent.com/ManuelVS8/Efectos_audio/refs/heads/main/Ni%C3%B1os.png" alt="Kids learning">
+            <div class="hall-of-fame" id="hallOfFame">
+                <div class="hall-of-fame-title">🏆 Mejores puntuaciones 🏆</div>
+                <table class="hall-of-fame-table">
+                    <thead><tr><th>Posición</th><th>Nombre</th><th>Puntos</th><th>Tiempo</th></tr></thead>
+                    <tbody id="hofTableBody"><tr><td colspan="4" class="hall-of-fame-error">Error de conexión.</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pantalla Resumen -->
+    <section class="screen" id="summaryScreen">
+        <header>
+            <h1 class="notranslate" data-i18n="summaryTitle">Measuring Historical Time</h1>
+        </header>
+        <div class="theory-content">
+            <div class="theory-main-title notranslate" data-i18n="summaryMainTitle">Measuring historical time</div>
+            <p class="theory-intro notranslate" data-i18n="summaryIntro">To indicate when a past event occurred, we can distinguish between units of measurement for recent past and ancient past:</p>
+            <div class="change-block blue-block">
+                <div class="block-title notranslate" data-i18n="blockRecentTitle">Measuring recent time</div>
+                <ul class="block-list">
+                    <li><strong data-i18n="termMinute">Minute:</strong> <span data-i18n="defMinute">60 seconds</span></li>
+                    <li><strong data-i18n="termHour">Hour:</strong> <span data-i18n="defHour">60 minutes</span></li>
+                    <li><strong data-i18n="termDay">Day:</strong> <span data-i18n="defDay">24 hours</span></li>
+                    <li><strong data-i18n="termWeek">Week:</strong> <span data-i18n="defWeek">7 days</span></li>
+                    <li><strong data-i18n="termMonth">Month:</strong> <span data-i18n="defMonth">30 days (28, 29, 31)</span></li>
+                </ul>
+            </div>
+            <div class="change-block orange-block">
+                <div class="block-title notranslate" data-i18n="blockPastTitle">Measuring the past</div>
+                <ul class="block-list">
+                    <li><strong data-i18n="termYear">Year:</strong> <span data-i18n="defYear">365 days (366)</span></li>
+                    <li><strong data-i18n="termLustrum">Lustrum:</strong> <span data-i18n="defLustrum">5 years</span></li>
+                    <li><strong data-i18n="termDecade">Decade:</strong> <span data-i18n="defDecade">10 years</span></li>
+                    <li><strong data-i18n="termCentury">Century:</strong> <span data-i18n="defCentury">100 years</span></li>
+                    <li><strong data-i18n="termMillennium">Millennium:</strong> <span data-i18n="defMillennium">1000 years</span></li>
+                </ul>
+            </div>
+            <div class="play-btn-container" style="text-align: center; margin-top: 20px;">
+                <button class="btn btn-primary notranslate" id="playBtn" data-i18n="btnPlay">Play</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pantalla Juego 1 -->
+    <section class="screen" id="game1Screen">
+        <header>
+            <h1 class="notranslate" data-i18n="game1Title">Measuring recent time</h1>
+        </header>
+        <div class="game-info">
+            <div class="timer" id="timerGame1">00:00.0</div>
+            <div class="progress-bar"><div class="progress-fill" id="progressFillGame1"></div></div>
+            <div class="timer" style="font-size:0.9rem; visibility:hidden;">Placeholder</div>
+        </div>
+        <div class="match-container" id="game1Container"></div>
+    </section>
+
+    <!-- Pantalla Juego 2 -->
+    <section class="screen" id="game2Screen">
+        <header>
+            <h1 class="notranslate" data-i18n="game2Title">Measuring the past</h1>
+        </header>
+        <div class="game-info">
+            <div class="timer" id="timerGame2">00:00.0</div>
+            <div class="progress-bar"><div class="progress-fill" id="progressFillGame2"></div></div>
+            <div class="timer" style="font-size:0.9rem; visibility:hidden;">Placeholder</div>
+        </div>
+        <div class="match-container" id="game2Container"></div>
+    </section>
+
+    <!-- Pantalla Juego 3 -->
+    <section class="screen" id="game3Screen">
+        <header>
+            <h1 class="notranslate" data-i18n="game3Title">Units of time</h1>
+            <div class="subtitle notranslate" data-i18n="game3Subtitle">Order from smallest to largest</div>
+        </header>
+        <div class="game-info">
+            <div class="timer" id="timerGame3">00:00.0</div>
+            <div class="progress-bar"><div class="progress-fill" id="progressFillGame3"></div></div>
+            <div class="timer" style="font-size:0.9rem; visibility:hidden;">Placeholder</div>
+        </div>
+        <div class="order-container" id="orderContainer"></div>
+        <div class="check-btn-container">
+            <button class="btn btn-primary notranslate" id="checkOrderBtn" data-i18n="btnCheck">Check</button>
+        </div>
+    </section>
+
+    <!-- Pantalla Final -->
+    <section class="screen" id="finalScreen">
+        <header>
+            <h1 class="final-title notranslate" data-i18n="finalTitle">Historical Time</h1>
+        </header>
+        <div class="results">
+            <div id="trophyBox">🏆</div>
+            <div class="score-title notranslate" data-i18n="scoreLabel">Score:</div>
+            <div class="big-score" id="finalScore">0</div>
+            <div class="final-time notranslate" data-i18n="timeLabel">Time: <span id="finalTime">00:00.0</span></div>
+            <div id="finalMsg" class="subtitle notranslate"></div>
+            <button class="btn btn-primary notranslate" id="backToMenuBtn" style="background:var(--orange);" data-i18n="btnBack">Back to menu</button>
+            <span class="credit notranslate" data-i18n="credit">Created by Manuel J. Ventura</span>
+            <img class="school-logo" src="https://raw.githubusercontent.com/ManuelVS8/Efectos_audio/refs/heads/main/Siurot.png" alt="School logo">
+        </div>
+    </section>
+</div>
+
+<!-- Modal de Envío de Puntuación -->
+<div id="submitModal" class="modal-overlay">
+    <div class="modal-content">
+        <h3 class="notranslate" data-i18n="modalTitle">Game Over!</h3>
+        <p class="notranslate" data-i18n="modalTimeLabel">Your time: <span id="modalTime">00:00.0</span></p>
+        <input type="text" id="playerName" class="modal-input" placeholder="Name" maxlength="15">
+        <input type="text" id="playerSurname" class="modal-input" placeholder="Surname" maxlength="20">
+        <div style="display: flex; gap: 10px; justify-content: center;">
+            <button id="submitScoreBtn" class="btn btn-primary notranslate" data-i18n="btnSave">Save</button>
+            <button id="discardScoreBtn" class="btn btn-ghost notranslate" data-i18n="btnCancel">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    /* --- CONFIGURACIÓN DE VARIABLES GLOBALES --- */
+    const SHEET_NAME = "Tiempo";
+    const APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby-VSj-Qgztv3YEItsxoa31GfIE82jgJ6ZRQ0OAiATAsd1qN5b-u4ApPCEF8yhYHRG4OA/exec";
+    const MIN_INTERACTIONS = 13; 
+    
+    let soundEnabled = true;
+    let audioUnlocked = false;
+    let isMuted = false;
+    let audioContext = null;
+    let currentLang = 'en';
+
+    let startTime = 0;
+    let timerInterval = null;
+    let elapsed = 0;
+    let finalTimeVal = 0;
+    let finalScoreVal = 0;
+    let totalAttempts = 0;
+
+    /* Live game data arrays — these store the CURRENT translation of each pair */
+    let game1LivePairs = [];
+    let game2LivePairs = [];
+
+    /* --- i18n TRANSLATIONS --- */
+    const translations = {
+        en: {
+            startTitle: "Measuring Historical Time",
+            startSubtitle: "We use different measures of time to indicate the passage of time.",
+            startAdvice: 'We can use different units of time to classify recent events: <span class="highlight-keyword">minute, hour, day, week, month</span>; and ancient events: <span class="highlight-keyword">year, lustrum, decade, century, millennium</span>.',
+            startEncouragement: "Come on!",
+            btnStart: "Start",
+            summaryTitle: "Measuring Historical Time",
+            summaryMainTitle: "Measuring historical time",
+            summaryIntro: "To indicate when a past event occurred, we can distinguish between units of measurement for recent past and ancient past:",
+            blockRecentTitle: "Measuring recent time",
+            termMinute: "Minute:", defMinute: "60 seconds",
+            termHour: "Hour:", defHour: "60 minutes",
+            termDay: "Day:", defDay: "24 hours",
+            termWeek: "Week:", defWeek: "7 days",
+            termMonth: "Month:", defMonth: "30 days (28, 29, 31)",
+            blockPastTitle: "Measuring the past",
+            termYear: "Year:", defYear: "365 days (366)",
+            termLustrum: "Lustrum:", defLustrum: "5 years",
+            termDecade: "Decade:", defDecade: "10 years",
+            termCentury: "Century:", defCentury: "100 years",
+            termMillennium: "Millennium:", defMillennium: "1000 years",
+            btnPlay: "Play",
+            game1Title: "Measuring recent time",
+            game2Title: "Measuring the past",
+            game3Title: "Units of time",
+            game3Subtitle: "Order from smallest to largest",
+            btnCheck: "Check",
+            finalTitle: "Historical Time",
+            scoreLabel: "Score:",
+            timeLabel: "Time: ",
+            btnBack: "Back to menu",
+            credit: "Created by Manuel J. Ventura",
+            modalTitle: "Game Over!",
+            modalTimeLabel: "Your time: ",
+            btnSave: "Save",
+            btnCancel: "Cancel",
+            msgPerfect: "Congratulations, maximum score!",
+            msgGood: "Good work! Keep practising",
+            placeholderName: "Name",
+            placeholderSurname: "Surname",
+            g1_minute: "Minute", g1_d1: "60 seconds",
+            g1_hour: "Hour", g1_d2: "60 minutes",
+            g1_day: "Day", g1_d3: "24 hours",
+            g1_week: "Week", g1_d4: "7 days",
+            g1_month: "Month", g1_d5: "30 days (28, 29, 31)",
+            g2_year: "Year", g2_d1: "365 days (366)",
+            g2_lustrum: "Lustrum", g2_d2: "5 years",
+            g2_decade: "Decade", g2_d3: "10 years",
+            g2_century: "Century", g2_d4: "100 years",
+            g2_millennium: "Millennium", g2_d5: "1000 years",
+            o_minute: "Minute", o_hour: "Hour", o_day: "Day", o_week: "Week", o_month: "Month",
+            o_year: "Year", o_lustrum: "Lustrum", o_decade: "Decade", o_century: "Century", o_millennium: "Millennium",
+            sending: "Sending...",
+            alertFill: "Please fill in name and surname"
+        },
+        es: {
+            startTitle: "Medimos el tiempo histórico",
+            startSubtitle: "Usamos diferentes medidas de tiempo para indicar el paso del tiempo.",
+            startAdvice: 'Podemos usar distintas unidades de tiempo para clasificar hechos recientes: <span class="highlight-keyword">minuto, hora, día, semana, mes</span>; y hechos antiguos: <span class="highlight-keyword">año, lustro, década, siglo, milenio</span>.',
+            startEncouragement: "¡Ánimo!",
+            btnStart: "Comenzar",
+            summaryTitle: "Medimos el tiempo histórico",
+            summaryMainTitle: "Medimos el tiempo histórico",
+            summaryIntro: "Para indicar cuándo ocurrió un hecho del pasado, podemos distinguir entre unidades de medida de pasado reciente y pasado antiguo:",
+            blockRecentTitle: "Medimos el tiempo reciente",
+            termMinute: "Minuto:", defMinute: "60 segundos",
+            termHour: "Hora:", defHour: "60 minutos",
+            termDay: "Día:", defDay: "24 horas",
+            termWeek: "Semana:", defWeek: "7 días",
+            termMonth: "Mes:", defMonth: "30 días (28, 29, 31)",
+            blockPastTitle: "Medimos el pasado",
+            termYear: "Año:", defYear: "365 días (366)",
+            termLustrum: "Lustro:", defLustrum: "5 años",
+            termDecade: "Década:", defDecade: "10 años",
+            termCentury: "Siglo:", defCentury: "100 años",
+            termMillennium: "Milenio:", defMillennium: "1000 años",
+            btnPlay: "Jugar",
+            game1Title: "Medimos el tiempo reciente",
+            game2Title: "Medimos el tiempo pasado",
+            game3Title: "Unidades de tiempo",
+            game3Subtitle: "Ordena de menor a mayor",
+            btnCheck: "Comprobar",
+            finalTitle: "El tiempo histórico",
+            scoreLabel: "Puntuación:",
+            timeLabel: "Tiempo: ",
+            btnBack: "Volver al menú",
+            credit: "Creado por Manuel J. Ventura",
+            modalTitle: "¡Juego Terminado!",
+            modalTimeLabel: "Tu tiempo: ",
+            btnSave: "Guardar",
+            btnCancel: "Cancelar",
+            msgPerfect: "¡Enhorabuena, puntuación máxima!",
+            msgGood: "¡Buen trabajo! Sigue practicando",
+            placeholderName: "Nombre",
+            placeholderSurname: "Apellido",
+            g1_minute: "Minuto", g1_d1: "60 segundos",
+            g1_hour: "Hora", g1_d2: "60 minutos",
+            g1_day: "Día", g1_d3: "24 horas",
+            g1_week: "Semana", g1_d4: "7 días",
+            g1_month: "Mes", g1_d5: "30 días (28, 29, 31)",
+            g2_year: "Año", g2_d1: "365 días (366)",
+            g2_lustrum: "Lustro", g2_d2: "5 años",
+            g2_decade: "Década", g2_d3: "10 años",
+            g2_century: "Siglo", g2_d4: "100 años",
+            g2_millennium: "Milenio", g2_d5: "1000 años",
+            o_minute: "Minuto", o_hour: "Hora", o_day: "Día", o_week: "Semana", o_month: "Mes",
+            o_year: "Año", o_lustrum: "Lustro", o_decade: "Década", o_century: "Siglo", o_millennium: "Milenio",
+            sending: "Enviando...",
+            alertFill: "Por favor, rellena nombre y apellido"
+        }
+    };
+
+    function t(key) {
+        return (translations[currentLang] && translations[currentLang][key]) || translations['en'][key] || key;
+    }
+
+    /* 
+       KEY TRANSLATION MAPS: map each pairId to its i18n keys for term and definition.
+       This lets us re-translate cards on the fly without rebuilding them.
+    */
+    const game1KeyMap = {
+        1: { termKey: 'g1_minute', defKey: 'g1_d1' },
+        2: { termKey: 'g1_hour',   defKey: 'g1_d2' },
+        3: { termKey: 'g1_day',    defKey: 'g1_d3' },
+        4: { termKey: 'g1_week',   defKey: 'g1_d4' },
+        5: { termKey: 'g1_month',  defKey: 'g1_d5' }
+    };
+    const game2KeyMap = {
+        1: { termKey: 'g2_year',      defKey: 'g2_d1' },
+        2: { termKey: 'g2_lustrum',   defKey: 'g2_d2' },
+        3: { termKey: 'g2_decade',    defKey: 'g2_d3' },
+        4: { termKey: 'g2_century',   defKey: 'g2_d4' },
+        5: { termKey: 'g2_millennium',defKey: 'g2_d5' }
+    };
+
+    function applyLanguage(lang) {
+        currentLang = lang;
+        document.documentElement.lang = lang;
+
+        /* Translate all data-i18n elements */
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            const val = t(key);
+            if (val) {
+                if (key === 'startAdvice') {
+                    el.innerHTML = val + '<strong style="display:block; margin-top:0.5rem; text-align: center;" data-i18n="startEncouragement">' + t('startEncouragement') + '</strong>';
+                } else if (key === 'timeLabel') {
+                    el.innerHTML = val + '<span id="finalTime">' + document.getElementById('finalTime').textContent + '</span>';
+                } else if (key === 'modalTimeLabel') {
+                    el.innerHTML = val + '<span id="modalTime">' + document.getElementById('modalTime').textContent + '</span>';
+                } else {
+                    el.textContent = val;
+                }
+            }
+        });
+
+        document.getElementById('playerName').placeholder = t('placeholderName');
+        document.getElementById('playerSurname').placeholder = t('placeholderSurname');
+
+        /* Update flag button styles */
+        const flagEN = document.getElementById('flagEN');
+        const flagES = document.getElementById('flagES');
+        if (lang === 'en') {
+            flagEN.classList.add('active'); flagEN.classList.remove('inactive');
+            flagES.classList.add('inactive'); flagES.classList.remove('active');
+        } else {
+            flagES.classList.add('active'); flagES.classList.remove('inactive');
+            flagEN.classList.add('inactive'); flagEN.classList.remove('active');
+        }
+
+        /* Live-translate match cards in game 1 */
+        translateLiveCards('game1Container', game1KeyMap, game1LivePairs);
+
+        /* Live-translate match cards in game 2 */
+        translateLiveCards('game2Container', game2KeyMap, game2LivePairs);
+
+        /* Live-translate order cards in game 3 */
+        if (order3CurrentLevel !== null) {
+            renderOrderLevel(order3Levels[order3CurrentLevel]);
+        }
+    }
+
+    /*
+       translateLiveCards: reads each card's pairId and type, looks up the
+       i18n key from the map, translates it, updates both the DOM textContent
+       AND the livePairs array so the game logic stays in sync.
+    */
+    function translateLiveCards(containerId, keyMap, livePairs) {
+        if (!livePairs.length) return;
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        const cards = container.querySelectorAll('.memory-card');
+        cards.forEach(card => {
+            const pairId = parseInt(card.dataset.pairId);
+            const type = card.dataset.type; // 'term' or 'def'
+            const mapping = keyMap[pairId];
+            if (!mapping) return;
+            const i18nKey = type === 'term' ? mapping.termKey : mapping.defKey;
+            const translatedText = t(i18nKey);
+            card.textContent = translatedText;
+            /* Also update the livePairs array so internal state is consistent */
+            const pairObj = livePairs.find(p => p.id === pairId);
+            if (pairObj) {
+                if (type === 'term') pairObj.term = translatedText;
+                else pairObj.def = translatedText;
+            }
+        });
+    }
+
+    document.getElementById('flagEN').onclick = () => { playSound('tap'); applyLanguage('en'); };
+    document.getElementById('flagES').onclick = () => { playSound('tap'); applyLanguage('es'); };
+
+    /* --- AUDIOS --- */
+    const audioUrls = {
+        correct: 'https://raw.githubusercontent.com/ManuelVS8/Efectos_audio/refs/heads/main/Correcto.mp3',
+        error: 'https://raw.githubusercontent.com/ManuelVS8/Efectos_audio/refs/heads/main/Error.mp3',
+        tap: 'https://raw.githubusercontent.com/ManuelVS8/Efectos_audio/refs/heads/main/Tap.mp3',
+        victory: 'https://raw.githubusercontent.com/ManuelVS8/Efectos_audio/refs/heads/main/Termin%C3%A9.mp3',
+        completed: 'https://raw.githubusercontent.com/ManuelVS8/Efectos_audio/refs/heads/main/Completado.mp3'
+    };
+    
+    const audioObjects = {};
+    Object.keys(audioUrls).forEach(key => { 
+        const a = new Audio(); a.src = audioUrls[key]; a.preload = 'auto'; audioObjects[key] = a; 
+    });
+
+    function unlockAudioContext() {
+        if (audioUnlocked) return;
+        try {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioContext.state === 'suspended') audioContext.resume();
+            const buffer = audioContext.createBuffer(1, 1, 22050);
+            const source = audioContext.createBufferSource();
+            source.buffer = buffer; source.connect(audioContext.destination); source.start(0);
+            audioUnlocked = true; isMuted = false;
+        } catch(e) { audioUnlocked = true; }
+    }
+
+    function playSound(type) {
+        if (!soundEnabled || isMuted) return;
+        if (!audioUnlocked) unlockAudioContext();
+        const a = audioObjects[type];
+        if(!a) return;
+        try { a.currentTime = 0; a.play(); } catch(e){}
+    }
+
+    function toggleSound() {
+        soundEnabled = !soundEnabled; isMuted = !soundEnabled;
+        updateMuteIcon(); if(soundEnabled) playSound('tap');
+    }
+    
+    function updateMuteIcon() {
+        const iconSpeaker = document.getElementById('iconSpeaker');
+        if (!soundEnabled) {
+            iconSpeaker.innerHTML = '<path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>';
+        } else {
+            iconSpeaker.innerHTML = '<path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>';
+        }
+    }
+
+    /* --- LÓGICA GENERAL --- */
+    function showScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+
+    function startGlobalTimer() {
+        stopTimer(); startTime = Date.now(); elapsed = 0;
+        timerInterval = setInterval(() => {
+            elapsed = (Date.now() - startTime) / 1000;
+            updateTimerDisplay('timerGame1', elapsed);
+            updateTimerDisplay('timerGame2', elapsed);
+            updateTimerDisplay('timerGame3', elapsed);
+        }, 100);
+    }
+
+    function stopTimer() { if (timerInterval) { clearInterval(timerInterval); timerInterval = null; } }
+    function updateTimerDisplay(id, time) { const el = document.getElementById(id); if(el) el.textContent = formatTime(time); }
+    function formatTime(sec) {
+        const m = Math.floor(sec / 60).toString().padStart(2, '0');
+        const s = Math.floor(sec % 60).toString().padStart(2, '0');
+        const ms = Math.round((sec % 1) * 10);
+        return `${m}:${s}.${ms}`;
+    }
+
+    /* --- FLUJO PRINCIPAL --- */
+    document.getElementById('startBtn').onclick = () => { playSound('tap'); showScreen('summaryScreen'); };
+    document.getElementById('playBtn').onclick = () => { playSound('tap'); startGlobalTimer(); totalAttempts = 0; initGame1(); };
+
+    /* --- DATOS DE JUEGOS --- */
+    function getGame1Data() {
+        return [
+            { id: 1, term: t('g1_minute'), def: t('g1_d1') },
+            { id: 2, term: t('g1_hour'),   def: t('g1_d2') },
+            { id: 3, term: t('g1_day'),    def: t('g1_d3') },
+            { id: 4, term: t('g1_week'),   def: t('g1_d4') },
+            { id: 5, term: t('g1_month'),  def: t('g1_d5') }
+        ];
+    }
+
+    function getGame2Data() {
+        return [
+            { id: 1, term: t('g2_year'),       def: t('g2_d1') },
+            { id: 2, term: t('g2_lustrum'),    def: t('g2_d2') },
+            { id: 3, term: t('g2_decade'),     def: t('g2_d3') },
+            { id: 4, term: t('g2_century'),    def: t('g2_d4') },
+            { id: 5, term: t('g2_millennium'), def: t('g2_d5') }
+        ];
+    }
+
+    /* --- LÓGICA DE EMPAREJAMIENTO --- */
+    function initGame(containerId, data, nextScreenInitFunc, progressId, totalPairs, livePairsRef) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '';
+
+        /* Store pairs for live translation */
+        livePairsRef.length = 0;
+        data.forEach(d => livePairsRef.push({ id: d.id, term: d.term, def: d.def }));
+
+        const col1 = document.createElement('div'); col1.className = 'column';
+        const col2 = document.createElement('div'); col2.className = 'column';
+
+        let terms = data.map(d => ({ text: d.term, pairId: d.id, type: 'term' }));
+        let defs = data.map(d => ({ text: d.def, pairId: d.id, type: 'def' }));
+
+        terms.sort(() => Math.random() - 0.5);
+        defs.sort(() => Math.random() - 0.5);
+
+        terms.forEach(item => col1.appendChild(createCard(item, 'term')));
+        defs.forEach(item => col2.appendChild(createCard(item, 'def')));
+
+        container.appendChild(col1);
+        container.appendChild(col2);
+
+        let selectedCard = null;
+        let matches = 0;
+        updateProgress(progressId, 0);
+
+        container.onclick = (e) => {
+            const target = e.target.closest('.memory-card');
+            if (!target || target.classList.contains('matched')) return;
+
+            if (!selectedCard) {
+                selectedCard = target; selectedCard.classList.add('selected'); playSound('tap'); return;
+            }
+            if (target === selectedCard) {
+                selectedCard.classList.remove('selected'); selectedCard = null; return;
+            }
+            if (target.dataset.type === selectedCard.dataset.type) {
+                selectedCard.classList.remove('selected'); selectedCard = target;
+                selectedCard.classList.add('selected'); playSound('tap'); return;
+            }
+
+            totalAttempts++;
+            const id1 = selectedCard.dataset.pairId;
+            const id2 = target.dataset.pairId;
+            const prevCard = selectedCard;
+
+            if (id1 === id2) {
+                playSound('correct');
+                prevCard.classList.remove('selected'); prevCard.classList.add('matched');
+                target.classList.add('matched'); selectedCard = null; matches++;
+                updateProgress(progressId, (matches / totalPairs) * 100);
+                if (matches === totalPairs) { setTimeout(nextScreenInitFunc, 600); }
+            } else {
+                playSound('error');
+                prevCard.classList.remove('selected'); prevCard.classList.add('flash-error');
+                target.classList.add('flash-error'); selectedCard = null;
+                setTimeout(() => { prevCard.classList.remove('flash-error'); target.classList.remove('flash-error'); }, 400);
+            }
+        };
+    }
+
+    function createCard(data, type) {
+        const card = document.createElement('div'); card.className = 'memory-card';
+        card.textContent = data.text; card.dataset.pairId = data.pairId; card.dataset.type = type;
+        return card;
+    }
+
+    function updateProgress(id, pct) { document.getElementById(id).style.width = pct + '%'; }
+
+    /* --- NAVEGACIÓN DE JUEGOS --- */
+    function initGame1() {
+        showScreen('game1Screen');
+        initGame('game1Container', getGame1Data(), initGame2, 'progressFillGame1', 5, game1LivePairs);
+    }
+
+    function initGame2() {
+        showScreen('game2Screen');
+        initGame('game2Container', getGame2Data(), initGame3, 'progressFillGame2', 5, game2LivePairs);
+    }
+
+    /* --- GAME 3: ORDERING --- */
+    const allTimeUnits = [
+        { key: 'o_minute', order: 0 }, { key: 'o_hour', order: 1 },
+        { key: 'o_day', order: 2 }, { key: 'o_week', order: 3 },
+        { key: 'o_month', order: 4 }, { key: 'o_year', order: 5 },
+        { key: 'o_lustrum', order: 6 }, { key: 'o_decade', order: 7 },
+        { key: 'o_century', order: 8 }, { key: 'o_millennium', order: 9 }
+    ];
+
+    let order3Levels = [];
+    let order3CurrentLevel = null;
+    let order3CurrentItems = [];
+
+    function generateOrder3Levels() {
+        const shuffled = [...allTimeUnits].sort(() => Math.random() - 0.5);
+        const l1 = shuffled.slice(0, 5).map(u => ({ key: u.key, order: u.order }));
+
+        const remaining = shuffled.slice(5);
+        const mustInclude = remaining.filter(u => !l1.some(l => l.key === u.key));
+        mustInclude.sort(() => Math.random() - 0.5);
+
+        const l2Units = [];
+        for (const u of mustInclude) { if (l2Units.length < 5) l2Units.push({ key: u.key, order: u.order }); }
+        while (l2Units.length < 5) {
+            const filler = l1[Math.floor(Math.random() * l1.length)];
+            l2Units.push({ key: filler.key, order: filler.order });
+        }
+        l2Units.sort(() => Math.random() - 0.5);
+
+        const usedInL2 = new Set(l2Units.map(x => x.key));
+        const notInL2 = allTimeUnits.filter(u => !usedInL2.has(u.key));
+        const l3Units = [];
+        for (const u of notInL2) { if (l3Units.length < 5) l3Units.push({ key: u.key, order: u.order }); }
+        while (l3Units.length < 5) {
+            const filler = l2Units[Math.floor(Math.random() * l2Units.length)];
+            l3Units.push({ key: filler.key, order: filler.order });
+        }
+        l3Units.sort(() => Math.random() - 0.5);
+
+        order3Levels = [l1, l2Units, l3Units];
+    }
+
+    function initGame3() {
+        showScreen('game3Screen');
+        generateOrder3Levels();
+        order3CurrentLevel = 0;
+        updateProgress('progressFillGame3', 0);
+        renderOrderLevel(order3Levels[0]);
+    }
+
+    function renderOrderLevel(units) {
+        const container = document.getElementById('orderContainer');
+        container.innerHTML = '';
+        order3CurrentItems = [...units];
+
+        order3CurrentItems.forEach((unit, index) => {
+            const item = document.createElement('div');
+            item.className = 'order-item';
+            item.dataset.index = index;
+
+            const word = document.createElement('div');
+            word.className = 'order-word';
+            word.textContent = t(unit.key);
+
+            const arrowsStack = document.createElement('div');
+            arrowsStack.className = 'arrows-stack';
+
+            const upBtn = document.createElement('button');
+            upBtn.className = 'arrow-btn'; upBtn.innerHTML = '▲';
+            upBtn.disabled = (index === 0);
+            upBtn.onclick = (e) => { e.stopPropagation(); playSound('tap'); moveItem(index, -1); };
+
+            const downBtn = document.createElement('button');
+            downBtn.className = 'arrow-btn'; downBtn.innerHTML = '▼';
+            downBtn.disabled = (index === order3CurrentItems.length - 1);
+            downBtn.onclick = (e) => { e.stopPropagation(); playSound('tap'); moveItem(index, 1); };
+
+            arrowsStack.appendChild(upBtn);
+            arrowsStack.appendChild(downBtn);
+
+            item.appendChild(word);
+            item.appendChild(arrowsStack);
+            container.appendChild(item);
+        });
+    }
+
+    function moveItem(index, direction) {
+        const newIndex = index + direction;
+        if (newIndex < 0 || newIndex >= order3CurrentItems.length) return;
+        const temp = order3CurrentItems[index];
+        order3CurrentItems[index] = order3CurrentItems[newIndex];
+        order3CurrentItems[newIndex] = temp;
+        renderOrderLevel(order3CurrentItems);
+    }
+
+    document.getElementById('checkOrderBtn').onclick = () => {
+        playSound('tap');
+        totalAttempts++;
+        const items = document.querySelectorAll('.order-item');
+        let allCorrect = true;
+
+        items.forEach((item, index) => {
+            item.classList.remove('correct-item', 'wrong-item');
+            const unit = order3CurrentItems[index];
+            let isCorrect = true;
+            if (index < order3CurrentItems.length - 1) {
+                if (unit.order >= order3CurrentItems[index + 1].order) isCorrect = false;
+            }
+            if (isCorrect) { item.classList.add('correct-item'); }
+            else { item.classList.add('wrong-item'); allCorrect = false; }
+        });
+
+        if (allCorrect) {
+            playSound('correct');
+            order3CurrentLevel++;
+            updateProgress('progressFillGame3', (order3CurrentLevel / 3) * 100);
+            if (order3CurrentLevel >= 3) { setTimeout(finishGame, 600); }
+            else { setTimeout(() => { renderOrderLevel(order3Levels[order3CurrentLevel]); }, 600); }
+        } else {
+            playSound('error');
+            setTimeout(() => { items.forEach(item => { item.classList.remove('correct-item', 'wrong-item'); }); }, 1200);
+        }
+    };
+
+    /* --- FINALIZAR --- */
+    function calcularPuntuacionFinal() {
+        let score = 100 - ((totalAttempts - MIN_INTERACTIONS) * (100 / MIN_INTERACTIONS));
+        return Math.round(Math.max(0, score));
+    }
+
+    function finishGame() {
+        stopTimer();
+        finalTimeVal = elapsed;
+        finalScoreVal = calcularPuntuacionFinal();
+
+        document.getElementById('finalScore').textContent = finalScoreVal;
+        document.getElementById('finalTime').textContent = formatTime(finalTimeVal);
+
+        const trophyBox = document.getElementById('trophyBox');
+        const msg = document.getElementById('finalMsg');
+        
+        if (finalScoreVal === 100) {
+            trophyBox.style.display = 'block'; msg.textContent = t('msgPerfect');
+            playSound('victory'); createConfetti();
+        } else {
+            trophyBox.style.display = 'none'; msg.textContent = t('msgGood'); playSound('completed');
+        }
+
+        showScreen('finalScreen');
+        showSubmitModal(finalTimeVal, finalScoreVal);
+    }
+
+    /* --- EFECTOS VISUALES --- */
+    function createConfetti() {
+        for(let i=0;i<100;i++){
+            setTimeout(()=>{
+                const c = document.createElement('div'); c.className = 'confetti';
+                const x = Math.random() * window.innerWidth;
+                const tx = (Math.random() - 0.5) * 200;
+                c.style.left = x + 'px'; c.style.top = '-10px';
+                c.style.backgroundColor = ['#ff595e','#1982c4','#6a4c93','#ffca3a','#8ac926'][Math.floor(Math.random()*5)];
+                c.style.setProperty('--tx', tx + 'px');
+                c.style.setProperty('--ty', window.innerHeight + 20 + 'px');
+                document.body.appendChild(c);
+                setTimeout(() => c.remove(), 3000);
+            }, i * 20);
+        }
+    }
+
+    /* --- HALL OF FAME --- */
+    let isHofLoading = false;
+
+    function loadHallOfFame() {
+        if (isHofLoading) return;
+        isHofLoading = true;
+        const tbody = document.getElementById('hofTableBody');
+        tbody.innerHTML = '<tr><td colspan="4" class="hall-of-fame-loading">Cargando datos...</td></tr>';
+        const url = `${APP_SCRIPT_URL}?action=read&sheet=${SHEET_NAME}`;
+        const timeoutId = setTimeout(() => {
+            if(isHofLoading) { tbody.innerHTML = '<tr><td colspan="4" class="hall-of-fame-error">Error de conexión (Timeout).</td></tr>'; isHofLoading = false; }
+        }, 8000);
+        fetch(url)
+            .then(r => { clearTimeout(timeoutId); if(!r.ok) throw new Error("Network error"); return r.json(); })
+            .then(data => {
+                if (data.status === 'success' && data.data) {
+                    const processedData = data.data.map(row => {
+                        const getVal = (keys) => { for(let key of keys) { if(row[key] !== undefined && row[key] !== "") return row[key]; } return null; };
+                        return { Nombre: getVal(["Nombre","nombre","name"]), Apellidos: getVal(["Apellidos","apellidos","surname"]), Puntuación: getVal(["Puntuación","puntuación","score"]), Tiempo: getVal(["Tiempo","tiempo","time"]) };
+                    });
+                    const validData = processedData.filter(row => row.Puntuación !== null && !isNaN(parseFloat(row.Puntuación)));
+                    if (validData.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="4" class="hall-of-fame-loading">¡Sé el primero en guardar tu puntuación!</td></tr>';
+                    } else {
+                        validData.sort((a, b) => {
+                            const sA = parseFloat(a.Puntuación)||0, sB = parseFloat(b.Puntuación)||0;
+                            if(sB!==sA) return sB-sA;
+                            return (parseFloat(a.Tiempo)||9999)-(parseFloat(b.Tiempo)||9999);
+                        });
+                        tbody.innerHTML = '';
+                        validData.slice(0, 10).forEach((item, i) => {
+                            const tr = document.createElement('tr');
+                            const displayName = `${item.Nombre} ${item.Apellidos}`.trim();
+                            let timeStr = item.Tiempo;
+                            if(!isNaN(parseFloat(item.Tiempo))) timeStr = formatTime(parseFloat(item.Tiempo));
+                            tr.innerHTML = `<td>${i+1}º</td><td>${displayName}</td><td>${item.Puntuación||0}</td><td>${timeStr}</td>`;
+                            tbody.appendChild(tr);
+                        });
+                    }
+                } else { tbody.innerHTML = '<tr><td colspan="4" class="hall-of-fame-error">Error de datos.</td></tr>'; }
+            })
+            .catch(e => { clearTimeout(timeoutId); tbody.innerHTML = '<tr><td colspan="4" class="hall-of-fame-error">Error de conexión.</td></tr>'; })
+            .finally(() => { isHofLoading = false; });
+    }
+
+    function showSubmitModal(time, score) {
+        document.getElementById('modalTime').textContent = formatTime(time);
+        document.getElementById('playerName').value = '';
+        document.getElementById('playerSurname').value = '';
+        document.getElementById('submitModal').style.display = 'flex';
+        const btn = document.getElementById('submitScoreBtn');
+        btn.textContent = t('btnSave'); btn.disabled = false;
+        document.getElementById('playerName').focus();
+    }
+
+    function handleSubmitScore() {
+        const btn = document.getElementById('submitScoreBtn');
+        const nameInput = document.getElementById('playerName');
+        const surnameInput = document.getElementById('playerSurname');
+        playSound('tap');
+        const payload = { score: finalScoreVal, time: finalTimeVal, name: nameInput.value.trim(), surname: surnameInput.value.trim() };
+        if(payload.name && payload.surname) {
+            const originalText = btn.textContent;
+            btn.textContent = t('sending'); btn.disabled = true;
+            fetch(APP_SCRIPT_URL, {
+                method: 'POST', mode: 'no-cors',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ sheet: SHEET_NAME, action: 'write', data: payload })
+            })
+            .then(() => { document.getElementById('submitModal').style.display = 'none'; btn.textContent = originalText; btn.disabled = false; setTimeout(loadHallOfFame, 1500); })
+            .catch(e => { alert("Error al enviar puntuación."); btn.textContent = originalText; btn.disabled = false; });
+        } else { alert(t('alertFill')); }
+    }
+
+    document.getElementById('submitScoreBtn').onclick = handleSubmitScore;
+    document.getElementById('discardScoreBtn').onclick = () => { playSound('tap'); document.getElementById('submitModal').style.display = 'none'; };
+    document.getElementById('playerName').addEventListener('keypress', function(e) { if(e.key==='Enter') document.getElementById('playerSurname').focus(); });
+    document.getElementById('playerSurname').addEventListener('keypress', function(e) { if(e.key==='Enter') handleSubmitScore(); });
+    document.getElementById('backToMenuBtn').onclick = () => { playSound('tap'); location.reload(); };
+    document.getElementById('muteBtn').onclick = toggleSound;
+
+    document.addEventListener('DOMContentLoaded', () => { loadHallOfFame(); });
+</script>
+
+</body></html>
